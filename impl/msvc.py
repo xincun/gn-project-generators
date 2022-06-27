@@ -226,7 +226,7 @@ class ProjectGenerator:
         pr.append(["Import", {"Project": "$(VCTargetsPath)\\Microsoft.Cpp.props"}])
 
         other_props = ["PropertyGroup",
-                        ["OutDir", self._target_relative_path(target, self.project_definition.build_dir) +"/"]]
+                        ["OutDir", self.project_defintion.get_absolute_path(target.get_output_dir())]]
         pr.append(other_props)
 
         additional_options = []
@@ -364,23 +364,23 @@ class ProjectGenerator:
         # Only add custom build rules for regular targets, ignore build target
         # which is not something that ninja knows about
         if target.type != TargetType.build_dir:
-
+            out_dir = self._target_relative_path(target, self.project_definition.build_dir)+"/")
             build_target_name = target.name[2:]
             build_target = ["Target", {"Name": "Build"},
                             ["Exec", {"Command": self.directory_lock_path + " . ninja.exe " +  build_target_name,
-                            "WorkingDirectory": "$(OutDir)"}]]
+                            "WorkingDirectory": out_dir}]]
             pr.append(build_target)
 
             clean_target = ["Target", {"Name": "Clean"},
                             ["Exec", {"Command": self.directory_lock_path + " . ninja.exe -t clean " +  build_target_name,
-                            "WorkingDirectory": "$(OutDir)"}]]
+                            "WorkingDirectory": out_dir}]]
             pr.append(clean_target)
 
             compile_target = ["Target", {"Name": "ClCompile", "DependsOnTargets": "SelectClCompile"},
                             # SelectCLCompile leaves precompiled header creation in, but we can skip it - ninja will take care of that
                             ["Exec", {"Condition": "'%(ClCompile.PrecompiledHeader)' != 'Create' and '%(ClCompile.ExcludedFromBuild)'!='true' and '%(ClCompile.CompilerIteration)' == '' and @(ClCompile) != ''",
                                     "Command": self.directory_lock_path + " . ninja.exe %(ClCompile.OutputFile)",
-                                    "WorkingDirectory": "$(OutDir)"}]]
+                                    "WorkingDirectory": out_dir}]]
             pr.append(compile_target)
 
         else: # empty targets for build project
